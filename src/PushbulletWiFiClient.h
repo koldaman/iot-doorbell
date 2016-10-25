@@ -4,17 +4,15 @@ Zabaleni funkcionality pro WiFiClient (odesilani dat pres HTTPS)
 
 #include <WiFiClientSecure.h>
 
-class CustomWiFiClient {
+class PushbulletWiFiClient {
 public:
-   CustomWiFiClient();
-
-   void sendData(int duration);
-   void sentCallback(void (*callback)(int httpStatus));
+   PushbulletWiFiClient();
+   void init();
+   void sendData(String title, String message);
 private:
    char* _host;
    int   _httpPort;
-   char* _googleScriptMacroId;
+   char* _apiKey;
    WiFiClientSecure _client;
-   void  (*_callback)(int httpResult);
-   int parseHttpResult(String httpResultString);
+   double getVbat();
 };

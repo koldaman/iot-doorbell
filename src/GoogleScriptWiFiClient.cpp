@@ -4,17 +4,17 @@
 #include "Arduino.h"
 
 #include <WiFiClientSecure.h>
-#include <CustomWiFiClient.h>
+#include <GoogleScriptWiFiClient.h>
 #include <Constants.h>
 
-CustomWiFiClient::CustomWiFiClient() {
+GoogleScriptWiFiClient::CustomWiFiClient() {
    WiFiClientSecure _client;
    _host = "script.google.com";
    _httpPort = 443;
    _googleScriptMacroId = Constants::MACRO_ID();
 }
 
-void CustomWiFiClient::sendData(int duration) {
+void GoogleScriptWiFiClient::sendData(int duration) {
    if (isnan(duration)) {
      Serial.println("Wrong duration value!");
      if (_callback) {
@@ -70,7 +70,7 @@ void CustomWiFiClient::sendData(int duration) {
     }
 }
 
-int CustomWiFiClient::parseHttpResult(String httpResultString) {
+int GoogleScriptWiFiClient::parseHttpResult(String httpResultString) {
    // HTTP/1.1 200 - OK
    if (httpResultString.length() > 12) {
       String numericHttpResult = httpResultString.substring(9,12);
@@ -80,6 +80,6 @@ int CustomWiFiClient::parseHttpResult(String httpResultString) {
    return -1; // FAILURE
 }
 
-void CustomWiFiClient::sentCallback(void (*callback)(int)) {
+void GoogleScriptWiFiClient::sentCallback(void (*callback)(int)) {
    _callback = callback;
 }

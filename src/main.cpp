@@ -1,12 +1,14 @@
 #include "Arduino.h"
 
 #include <CustomWiFiManager.h>
-#include <CustomWiFiClient.h>
+#include <GoogleScriptWiFiClient.h>
+#include <PushbulletWiFiClient.h>
 #include <PinReader.h>
 #include <Blink.h>
 
 // zasilani informaci do cloudu
-CustomWiFiClient client;
+GoogleScriptWiFiClient googleScriptClient;
+PushbulletWiFiClient pushbulletClient;
 
 const int BELL_PIN = 4;   // D2
 PinReader pinReader(BELL_PIN);
@@ -47,7 +49,8 @@ void pinCallback(int oldValue, int newValue) {
       message += duration;
       Serial.println(message);
       if (!reportSent) {
-         client.sendData(duration);
+         pushbulletClient.sendData("Doorbell", message);
+         googleScriptClient.sendData(duration);
          reportSent = true;
       } else {
          Serial.println("Ignoring long duration report, already reported");
@@ -80,7 +83,7 @@ void setup() {
 
   blinker.stop();
 
-  client.sentCallback(handleDataSent);
+  googleScriptClient.sentCallback(handleDataSent);
 
   CustomWiFiManager::start(&blinker);
 }
