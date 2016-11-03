@@ -17,6 +17,7 @@ void PinReader::setCallback(void (*callback)(int, int)) {
 
 void PinReader::init() {
    pinMode(_pinNumber, INPUT);
+   _value = digitalRead(_pinNumber);
 }
 
 void PinReader::monitorChanges() {
