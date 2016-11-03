@@ -1,36 +1,75 @@
 #include "Arduino.h"
 
 #include <CustomWiFiManager.h>
-#include <GoogleScriptWiFiClient.h>
-#include <PushbulletWiFiClient.h>
+#include <CustomWiFiClient.h>
 #include <PinReader.h>
 #include <Blink.h>
 
-// zasilani informaci do cloudu
-GoogleScriptWiFiClient googleScriptClient;
-PushbulletWiFiClient pushbulletClient;
+// send HTTP requests to cloud
+CustomWiFiClient httpsClient;
 
 const int BELL_PIN = 4;   // D2
-PinReader pinReader(BELL_PIN);
+PinReader pinReaderBell(BELL_PIN);
+
+const int DOOR_PIN = 5;   // D1
+PinReader pinReaderDoor(DOOR_PIN);
+
+const int RELAY_PIN = 0;  // D3
 
 const int LED_PIN = 14;   // D5
 Blink blinker(LED_PIN);
 
-const int RELAY_PIN = 0;  // D3
-
 int state = LOW;
 
-// send report only once
-bool reportSent = false;
+long lastMillisHIGH = 0;
+long lastMillisEvent = 0;
 
-long lastMillis = 0;
+int ringCollector[] = {0,0,0,0,0,0,0,0,0,0};
 
 // maximum doorbell duration
 const int maxInterval = 10*1000; // 10 seconds
 
-void pinCallback(int oldValue, int newValue) {
-   Serial.print("State changed: ");
-   Serial.println(newValue);
+// delay of sending statistic data
+const int sendDelay = 2*1000; // 2 seconds
+
+bool printRings() {
+   Serial.print("{");
+   for (int i = 0; i < 10; i++) {
+      Serial.print(ringCollector[i]);
+      Serial.print(",");
+   }
+   Serial.println("}");
+}
+
+int countRings() {
+  int count = 0;
+   for (int i = 0; i < 10; i++) {
+      count += ringCollector[i] > 0 ? 1 : 0;
+   }
+   return count;
+}
+
+void addRing(int duration) {
+   if (duration > maxInterval) { // ignoring long ringing - suppose we'ha already sent it
+     return;
+   }
+   for (int i = 0; i < 10; i++) {
+      if (ringCollector[i] == 0) {
+         ringCollector[i] = duration;
+         break;
+      }
+   }
+}
+
+void clearRings() {
+   for (int i = 0; i < 10; i++) {
+      ringCollector[i] = 0;
+   }
+}
+
+void bellCallback(int oldValue, int newValue) {
+   Serial.print("Doorbell state changed: ");
+   Serial.println(newValue ? "Ringing" : "Stopped");
 
    state = newValue;
 
@@ -40,26 +79,33 @@ void pinCallback(int oldValue, int newValue) {
 
    if (newValue == HIGH) {
       // HIGH - registr time
-      lastMillis = currentMillis;
-      reportSent = false;
+      lastMillisHIGH = currentMillis;
    } else {
-      // LOW - send statistic data
-      int duration = currentMillis - lastMillis;
+      // LOW - register statistic data
+      int duration = currentMillis - lastMillisHIGH;
       String message = "Doorbell duration: ";
       message += duration;
       Serial.println(message);
-      if (!reportSent) {
-         pushbulletClient.sendData("Doorbell", message);
-         googleScriptClient.sendData(duration);
-         reportSent = true;
-      } else {
-         Serial.println("Ignoring long duration report, already reported");
-      }
+      addRing(duration);
+      printRings();
    }
+   lastMillisEvent = currentMillis;
+}
+
+void doorCallback(int oldValue, int newValue) {
+  Serial.print("Door state changed: ");
+  const char* state = newValue ? "Closed" : "Opened";
+  Serial.println(state);
+
+  // send push notification to Pushbullet
+  httpsClient.sendDataPushbullet("Door", state);
+
+  // send statistic data to Google
+  httpsClient.sendDoorDataGoogle(state);
 }
 
 void handleDataSent(int httpResult) {
-   Serial.print("HttpResult: ");
+   Serial.print("Google HttpResult: ");
    Serial.print(httpResult);
    if (httpResult >= 200 && httpResult < 300) {
       Serial.println(" - OK");
@@ -68,6 +114,7 @@ void handleDataSent(int httpResult) {
       Serial.println(" - FAILED");
       blinker.init({10,50,10,50,10}, 1);
    }
+
    blinker.start();
 }
 
@@ -78,26 +125,56 @@ void setup() {
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, LOW);
 
-  pinReader.init();
-  pinReader.setCallback(pinCallback);
+  pinReaderBell.init();
+  pinReaderBell.setCallback(bellCallback);
+
+  pinReaderDoor.init();
+  pinReaderDoor.setCallback(doorCallback);
 
   blinker.stop();
 
-  googleScriptClient.sentCallback(handleDataSent);
+  httpsClient.sentCallback(handleDataSent);
 
   CustomWiFiManager::start(&blinker);
 }
 
 void loop() {
-   pinReader.monitorChanges();
+   pinReaderBell.monitorChanges();
+   pinReaderDoor.monitorChanges();
+
+   httpsClient.monitorState();
 
    unsigned long currentMillis = millis();
 
    // prevent long door bell active state
-   if (state == HIGH && currentMillis - lastMillis >= maxInterval) {
+   if (state == HIGH && currentMillis - lastMillisHIGH >= maxInterval) {
       String message = "Max duration reached: ";
-      message += currentMillis - lastMillis;
+      message += currentMillis - lastMillisHIGH;
       Serial.println(message);
-      pinCallback(state, LOW);
+      bellCallback(state, LOW);
    }
+
+   if (countRings() > 0 && state == LOW &&  currentMillis - lastMillisEvent >= sendDelay) {
+      printRings();
+
+      // send push notification to Pushbullet
+      String message = "Ringing ";
+      message += countRings();
+      message += "x...";
+      httpsClient.sendDataPushbullet("Doorbell", message);
+
+      lastMillisEvent = 0;
+      for (int i = 0; i < 10; ++i) {
+         if (ringCollector[i] == 0) {
+            break;
+         }
+         // send statistic data to Google
+         httpsClient.sendBellDataGoogle(ringCollector[i]);
+         if (ringCollector[i] == maxInterval) {
+            Serial.println("Max ringing interval reached");
+         }
+      }
+      clearRings();
+   }
+
 }
