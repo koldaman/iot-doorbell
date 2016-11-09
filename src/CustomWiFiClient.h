@@ -13,11 +13,22 @@ public:
   void sendDoorDataGoogle(const char* state);
   void sentCallback(void (*callback)(int httpStatus));
   void monitorState();
+  void setApiKeyPushbullet1(String apiKey);
+  String getApiKeyPushbullet1();
+  void setActivePushbullet1(bool active);
+  bool isActivePushbullet1();
+  void setApiKeyPushbullet2(String apiKey);
+  String getApiKeyPushbullet2();
+  void setActivePushbullet2(bool active);
+  bool isActivePushbullet2();
 private:
   // Pushbullet
   const char* _hostPushbullet;
-  int   _httpPortPushbullet;
-  const char* _apiKeyPushbullet;
+  int         _httpPortPushbullet;
+  String      _apiKeyPushbullet1;
+  bool        _activePushbullet1;
+  String      _apiKeyPushbullet2;
+  bool        _activePushbullet2;
 
   // Google
   const char* _hostGoogle;

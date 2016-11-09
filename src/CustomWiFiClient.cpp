@@ -15,10 +15,45 @@ CustomWiFiClient::CustomWiFiClient() {
 
    _hostPushbullet = "api.pushbullet.com";
    _httpPortPushbullet = 443;
-   _apiKeyPushbullet = Constants::PUSHBULLET_API_KEY();
+   _apiKeyPushbullet1 = "NA";
+   _activePushbullet1 = true;
+   _apiKeyPushbullet2 = "NA";
+   _activePushbullet2 = true;
 
    _timeout = 0;
    _requestRunning = false;
+}
+
+void CustomWiFiClient::setApiKeyPushbullet1(String apiKey) {
+  _apiKeyPushbullet1 = apiKey;
+}
+
+String CustomWiFiClient::getApiKeyPushbullet1() {
+  return _apiKeyPushbullet1;
+}
+
+void CustomWiFiClient::setActivePushbullet1(bool active) {
+  _activePushbullet1 = active;
+}
+
+bool CustomWiFiClient::isActivePushbullet1() {
+  return _activePushbullet1;
+}
+
+void CustomWiFiClient::setApiKeyPushbullet2(String apiKey) {
+  _apiKeyPushbullet2 = apiKey;
+}
+
+String CustomWiFiClient::getApiKeyPushbullet2() {
+  return _apiKeyPushbullet2;
+}
+
+void CustomWiFiClient::setActivePushbullet2(bool active) {
+  _activePushbullet2 = active;
+}
+
+bool CustomWiFiClient::isActivePushbullet2() {
+  return _activePushbullet2;
 }
 
 void CustomWiFiClient::sendBellDataGoogle(int duration) {
@@ -36,7 +71,7 @@ void CustomWiFiClient::sendBellDataGoogle(int duration) {
 
   // volame zabezpecene - WiFiClientSecure, pro obycejne HTTP by stacil WiFiClient
   if (!_client.connect(_hostGoogle, _httpPortGoogle)) {
-    Serial.println("connection failed");
+    Serial.println("google connection failed");
     if (_callback) {
       _callback(parseHttpResult("FAIL"));
     }
@@ -70,7 +105,7 @@ void CustomWiFiClient::sendDoorDataGoogle(const char* state) {
 
   // volame zabezpecene - WiFiClientSecure, pro obycejne HTTP by stacil WiFiClient
   if (!_client.connect(_hostGoogle, _httpPortGoogle)) {
-    Serial.println("connection failed");
+    Serial.println("google connection failed");
     if (_callback) {
       _callback(parseHttpResult("FAIL"));
     }
@@ -104,7 +139,7 @@ void CustomWiFiClient::sendDataPushbullet(String title, String message) {
 
    // volame zabezpecene - WiFiClientSecure, pro obycejne HTTP by stacil WiFiClient
    if (!_client.connect(_hostPushbullet, _httpPortPushbullet)) {
-     Serial.println("connection failed");
+     Serial.println("pushbullet connection failed");
      return;
    }
 
@@ -116,17 +151,33 @@ void CustomWiFiClient::sendDataPushbullet(String title, String message) {
 
    String postData = String("type=note&") + "title=" + title + "&" + "body=" + message;
 
-   // posli request
-   _client.print(String("POST ") + url + " HTTP/1.1\r\n" +
-                "Host: " + _hostPushbullet + "\r\n" +
-                "Authorization: Bearer " + _apiKeyPushbullet + "\r\n" +
-                "Connection: close\r\n" +
-                "Content-Type: application/x-www-form-urlencoded;\r\n" +
-                "Content-Length: " + postData.length() + "\r\n" +
-                "\r\n" +
-                postData + "\n");
+   // posli request(y)
+   if (_activePushbullet1) {
+     Serial.println("Sending pushbullet1 request...");
+     _client.print(String("POST ") + url + " HTTP/1.1\r\n" +
+                  "Host: " + _hostPushbullet + "\r\n" +
+                  "Authorization: Bearer " + _apiKeyPushbullet1 + "\r\n" +
+                  "Connection: close\r\n" +
+                  "Content-Type: application/x-www-form-urlencoded;\r\n" +
+                  "Content-Length: " + postData.length() + "\r\n" +
+                  "\r\n" +
+                  postData + "\n");
+   }
+   if (_activePushbullet2) {
+     Serial.println("Sending pushbullet2 request...");
+     _client.print(String("POST ") + url + " HTTP/1.1\r\n" +
+                  "Host: " + _hostPushbullet + "\r\n" +
+                  "Authorization: Bearer " + _apiKeyPushbullet2 + "\r\n" +
+                  "Connection: close\r\n" +
+                  "Content-Type: application/x-www-form-urlencoded;\r\n" +
+                  "Content-Length: " + postData.length() + "\r\n" +
+                  "\r\n" +
+                  postData + "\n");
+   }
 
-    Serial.println("Pusbullet request sent... not waiting for response (do not block other operations)");
+   if (_activePushbullet1 || _activePushbullet2) {
+     Serial.println("Pushbullet request sent... not waiting for response (do not block other operations)");
+   }
 }
 
 void CustomWiFiClient::monitorState() {

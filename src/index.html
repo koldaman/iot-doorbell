@@ -1,0 +1,62 @@
+<!doctype html>
+<html class='no-js' lang=''>
+    <head>
+        <meta charset='utf-8'>
+        <meta http-equiv='x-ua-compatible' content='ie=edge'>
+        <title>Doorbell IoT</title>
+        <meta name='description' content=''>
+        <meta name='viewport' content='width=device-width, initial-scale=1'>
+        <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css'>
+        <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css'>
+        <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/fonts/fontawesome-webfont.eot'>
+        <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/fonts/fontawesome-webfont.svg'>
+        <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/fonts/fontawesome-webfont.ttf'>
+        <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/fonts/fontawesome-webfont.woff'>
+        <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/fonts/fontawesome-webfont.woff2'>
+        <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/fonts/FontAwesome.otf'>
+        <link rel='stylesheet' href='css/main.css'>
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js'></script>
+		<style>
+         body {
+            background-color: rgba(0,0,0,.05);
+            font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;
+         }
+         h1 {
+            color: rgba(255,255,255,.9);
+	          text-shadow: rgba(0,0,0,.2) 0px -1px 0px;
+            background-color: #2d353f;
+            padding: 5px 0;
+            margin-top: 0;
+				    font-size: 2em;
+				    text-align: center;
+			   }
+         .container {
+            padding: 0 1em;
+         }
+         .action {
+				    padding: 0.5em;
+            font-size: 1.2em;
+            text-align: center;
+			   }
+         .action a {
+            color: rgba(0,0,0,.5);
+			   }
+		</style>
+    </head>
+    <body>
+        <h1 class='header'>Doorbell IoT</h1>
+        <div class='container'>
+          <form action='' method='get'>
+            <fieldset>
+              <legend>Pushbbullet notification</legend>
+              <p>API key 1:<br>
+              <input type='text' name='pbKey1' value='x'> &nbsp; <input type='checkbox' name='pbKeyActive1' value='1' checked> active</p>
+              <p>API key 2:<br>
+              <input type='text' name='pbKey2' value='x'> &nbsp; <input type='checkbox' name='pbKeyActive1' value='1'> active</p>
+              <input type='submit' value='Save'>
+            </fieldset>
+          </form>
+     </div>
+     <div class='action'><a href='?bell=1'><i class='fa fa-bell' aria-hidden='true'></i> Ring doorbell</a></div>
+    </body>
+</html>

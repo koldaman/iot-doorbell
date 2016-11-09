@@ -2,11 +2,16 @@
 
 #include <CustomWiFiManager.h>
 #include <CustomWiFiClient.h>
+#include <CustomWebServer.h>
+#include <ConfigPersistor.h>
 #include <PinReader.h>
 #include <Blink.h>
 
 // send HTTP requests to cloud
 CustomWiFiClient httpsClient;
+
+// HTTP server
+CustomWebServer server(80);
 
 const int BELL_PIN = 4;   // D2
 PinReader pinReaderBell(BELL_PIN);
@@ -118,6 +123,25 @@ void handleDataSent(int httpResult) {
    blinker.start();
 }
 
+// when config get saved to EEPROM
+void configChanged() {
+  Serial.println("Loading config data from EEPROM...");
+  ConfigPersistor configPersistor;
+  configPersistor.init();
+  httpsClient.setApiKeyPushbullet1(configPersistor.getPbApiKey1());
+  httpsClient.setActivePushbullet1(configPersistor.getPbActive1());
+  httpsClient.setApiKeyPushbullet2(configPersistor.getPbApiKey2());
+  httpsClient.setActivePushbullet2(configPersistor.getPbActive2());
+}
+
+// manual request for ring a bell
+void ringRequest() {
+  Serial.println("Doorbell ring request from web server...");
+  bellCallback(LOW, HIGH);
+  delay(300);
+  bellCallback(HIGH, LOW);
+}
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
@@ -136,45 +160,55 @@ void setup() {
   httpsClient.sentCallback(handleDataSent);
 
   CustomWiFiManager::start(&blinker);
+
+  // load EEPROM configuration data
+  configChanged();
+
+  server.init(httpsClient.getApiKeyPushbullet1(), httpsClient.isActivePushbullet1(), httpsClient.getApiKeyPushbullet2(), httpsClient.isActivePushbullet2());
+  server.saveCallback(configChanged);
+  server.ringCallback(ringRequest);
 }
 
 void loop() {
-   pinReaderBell.monitorChanges();
-   pinReaderDoor.monitorChanges();
 
-   httpsClient.monitorState();
+  server.handleClient();
 
-   unsigned long currentMillis = millis();
+  pinReaderBell.monitorChanges();
+  pinReaderDoor.monitorChanges();
 
-   // prevent long door bell active state
-   if (state == HIGH && currentMillis - lastMillisHIGH >= maxInterval) {
-      String message = "Max duration reached: ";
-      message += currentMillis - lastMillisHIGH;
-      Serial.println(message);
-      bellCallback(state, LOW);
-   }
+  httpsClient.monitorState();
 
-   if (countRings() > 0 && state == LOW &&  currentMillis - lastMillisEvent >= sendDelay) {
-      printRings();
+  unsigned long currentMillis = millis();
 
-      // send push notification to Pushbullet
-      String message = "Ringing ";
-      message += countRings();
-      message += "x...";
-      httpsClient.sendDataPushbullet("Doorbell", message);
+  // prevent long door bell active state
+  if (state == HIGH && currentMillis - lastMillisHIGH >= maxInterval) {
+    String message = "Max duration reached: ";
+    message += currentMillis - lastMillisHIGH;
+    Serial.println(message);
+    bellCallback(state, LOW);
+  }
 
-      lastMillisEvent = 0;
-      for (int i = 0; i < 10; ++i) {
-         if (ringCollector[i] == 0) {
-            break;
-         }
-         // send statistic data to Google
-         httpsClient.sendBellDataGoogle(ringCollector[i]);
-         if (ringCollector[i] == maxInterval) {
-            Serial.println("Max ringing interval reached");
-         }
+  if (countRings() > 0 && state == LOW &&  currentMillis - lastMillisEvent >= sendDelay) {
+    printRings();
+
+    // send push notification to Pushbullet
+    String message = "Ringing ";
+    message += countRings();
+    message += "x...";
+    httpsClient.sendDataPushbullet("Doorbell", message);
+
+    lastMillisEvent = 0;
+    for (int i = 0; i < 10; ++i) {
+      if (ringCollector[i] == 0) {
+        break;
       }
-      clearRings();
-   }
+      // send statistic data to Google
+      httpsClient.sendBellDataGoogle(ringCollector[i]);
+      if (ringCollector[i] == maxInterval) {
+        Serial.println("Max ringing interval reached");
+      }
+    }
+    clearRings();
+  }
 
 }
