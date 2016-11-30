@@ -102,6 +102,14 @@ void doorCallback(int oldValue, int newValue) {
   const char* state = newValue ? "Closed" : "Opened";
   Serial.println(state);
 
+  if (newValue) { // blink when door opened
+    blinker.init({100, 300}, 0);
+    blinker.start();
+  } else {
+    blinker.init({1000}, 0); // light only
+    blinker.start();
+  }
+
   // send push notification to Pushbullet
   httpsClient.sendDataPushbullet("Door", state);
 
