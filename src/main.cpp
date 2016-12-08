@@ -13,18 +13,22 @@ CustomWiFiClient httpsClient;
 // HTTP server
 CustomWebServer server(80);
 
-const int BELL_PIN = 4;   // D2
+const int BELL_PIN = 13;
 PinReader pinReaderBell(BELL_PIN);
 
-const int DOOR_PIN = 5;   // D1
+const int DOOR_PIN = 14;
 PinReader pinReaderDoor(DOOR_PIN);
 
-const int RELAY_PIN = 0;  // D3
+const int RELAY_PIN = 0;
 
-const int LED_PIN = 14;   // D5
+const int LED_PIN = 2;
 Blink blinker(LED_PIN);
 
-int state = LOW;
+const int INTERNAL_LED_PIN = 1;
+Blink blinkerInternal(INTERNAL_LED_PIN);
+
+int ringState = LOW;
+int doorState = HIGH;
 
 long lastMillisHIGH = 0;
 long lastMillisEvent = 0;
@@ -47,11 +51,11 @@ bool printRings() {
 }
 
 int countRings() {
-  int count = 0;
-   for (int i = 0; i < 10; i++) {
-      count += ringCollector[i] > 0 ? 1 : 0;
-   }
-   return count;
+	int count = 0;
+	for (int i = 0; i < 10; i++) {
+		count += ringCollector[i] > 0 ? 1 : 0;
+	}
+	return count;
 }
 
 void addRing(int duration) {
@@ -72,17 +76,33 @@ void clearRings() {
    }
 }
 
+void stateChanged() {
+   blinker.stop();
+   if (ringState == HIGH) {
+      // ringing
+      blinker.init({1000}, 0); // no blink
+   } else if (doorState == LOW) {
+      // door opened
+      blinker.init({10, 50}, 0); // blink quickly
+   } else {
+      // normal state
+      blinker.init({100, 200, 100, 3000}, 0); // heartbeat
+   }
+
+   blinker.start();
+}
+
 void bellCallback(int oldValue, int newValue) {
+   ringState = !newValue;
+
    Serial.print("Doorbell state changed: ");
-   Serial.println(newValue ? "Ringing" : "Stopped");
+   Serial.println(ringState ? "Ringing" : "Stopped");
 
-   state = newValue;
-
-   digitalWrite(RELAY_PIN, newValue);
+   digitalWrite(RELAY_PIN, !ringState);
 
    unsigned long currentMillis = millis();
 
-   if (newValue == HIGH) {
+   if (ringState == HIGH) {
       // HIGH - registr time
       lastMillisHIGH = currentMillis;
    } else {
@@ -95,20 +115,17 @@ void bellCallback(int oldValue, int newValue) {
       printRings();
    }
    lastMillisEvent = currentMillis;
+   stateChanged();
 }
 
 void doorCallback(int oldValue, int newValue) {
+  doorState = newValue;
+
   Serial.print("Door state changed: ");
-  const char* state = newValue ? "Closed" : "Opened";
+  const char* state = doorState ? "Closed" : "Opened";
   Serial.println(state);
 
-  if (newValue) { // blink when door opened
-    blinker.init({100, 300}, 0);
-    blinker.start();
-  } else {
-    blinker.init({1000}, 0); // light only
-    blinker.start();
-  }
+  stateChanged();
 
   // send push notification to Pushbullet
   httpsClient.sendDataPushbullet("Door", state);
@@ -122,13 +139,13 @@ void handleDataSent(int httpResult) {
    Serial.print(httpResult);
    if (httpResult >= 200 && httpResult < 300) {
       Serial.println(" - OK");
-      blinker.init({10}, 1);
+      blinkerInternal.init({10}, 1);
    } else {
       Serial.println(" - FAILED");
-      blinker.init({10,50,10,50,10}, 1);
+      blinkerInternal.init({10,50,10,50,10}, 1);
    }
 
-   blinker.start();
+   blinkerInternal.start();
 }
 
 // when config get saved to EEPROM
@@ -145,9 +162,9 @@ void configChanged() {
 // manual request for ring a bell
 void ringRequest() {
   Serial.println("Doorbell ring request from web server...");
-  bellCallback(LOW, HIGH);
-  delay(300);
   bellCallback(HIGH, LOW);
+  delay(300);
+  bellCallback(LOW, HIGH);
 }
 
 void setup() {
@@ -155,7 +172,8 @@ void setup() {
   Serial.begin(115200);
 
   pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, LOW);
+  digitalWrite(RELAY_PIN, HIGH);
+  digitalWrite(LED_PIN, HIGH);
 
   pinReaderBell.init();
   pinReaderBell.setCallback(bellCallback);
@@ -163,11 +181,15 @@ void setup() {
   pinReaderDoor.init();
   pinReaderDoor.setCallback(doorCallback);
 
+  blinker.inverse(true);
   blinker.stop();
+
+  blinkerInternal.inverse(true);
+  blinkerInternal.stop();
 
   httpsClient.sentCallback(handleDataSent);
 
-  CustomWiFiManager::start(&blinker);
+  CustomWiFiManager::start(&blinkerInternal);
 
   // load EEPROM configuration data
   configChanged();
@@ -175,6 +197,8 @@ void setup() {
   server.init(httpsClient.getApiKeyPushbullet1(), httpsClient.isActivePushbullet1(), httpsClient.getApiKeyPushbullet2(), httpsClient.isActivePushbullet2());
   server.saveCallback(configChanged);
   server.ringCallback(ringRequest);
+
+  stateChanged();
 }
 
 void loop() {
@@ -189,14 +213,14 @@ void loop() {
   unsigned long currentMillis = millis();
 
   // prevent long door bell active state
-  if (state == HIGH && currentMillis - lastMillisHIGH >= maxInterval) {
+  if (ringState == HIGH && currentMillis - lastMillisHIGH >= maxInterval) {
     String message = "Max duration reached: ";
     message += currentMillis - lastMillisHIGH;
     Serial.println(message);
-    bellCallback(state, LOW);
+    bellCallback(!ringState, HIGH);
   }
 
-  if (countRings() > 0 && state == LOW &&  currentMillis - lastMillisEvent >= sendDelay) {
+  if (countRings() > 0 && ringState == LOW &&  currentMillis - lastMillisEvent >= sendDelay) {
     printRings();
 
     // send push notification to Pushbullet

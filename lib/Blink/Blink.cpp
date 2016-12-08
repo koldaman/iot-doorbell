@@ -9,6 +9,7 @@
 
 Blink::Blink(int pinNumber) {
    _pinNumber = pinNumber;
+   _inverse = false;
 }
 
 Blink::Blink(int pinNumber, std::vector<int> intervals, int repetitionCount) {
@@ -26,6 +27,10 @@ void Blink::init(std::vector<int> intervals, int repetitionCount) {
    pinMode(_pinNumber, OUTPUT);
 }
 
+void Blink::inverse(bool inverse) {
+   _inverse = inverse;
+}
+
 void Blink::changeState(Blink *blink) {
    if (blink->_stopRequested || (blink->_repetitionCount > 0 && blink->_count == blink->_repetitionCount)) {
       blink->stop();
@@ -33,7 +38,9 @@ void Blink::changeState(Blink *blink) {
    }
 
    blink->_state = blink->_state == LOW ? HIGH : LOW;
-   digitalWrite(blink->_pinNumber, blink->_state);
+
+   digitalWrite(blink->_pinNumber, blink->_inverse ? (blink->_state == LOW ? HIGH : LOW) : blink->_state);
+
    blink->_ticker.attach_ms(blink->_intervals[blink->_currentInterval], &Blink::changeState, blink);
 
    if (blink->_currentInterval == blink->_intervals.size()-1) {

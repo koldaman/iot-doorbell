@@ -18,6 +18,7 @@ class Blink {
     void init(std::vector<int> intervals, const int repetitionCount);
     void start();
     void stop();
+    void inverse(bool inverse);
   private:
     int    _pinNumber;
     std::vector<int> _intervals;
@@ -27,6 +28,7 @@ class Blink {
     bool   _stopRequested;
     int    _state;
     Ticker _ticker;
+    bool   _inverse;
     static void changeState(Blink *blink);
 };
 
