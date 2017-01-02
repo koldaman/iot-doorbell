@@ -16,9 +16,11 @@ CustomWiFiClient::CustomWiFiClient() {
    _hostPushbullet = "api.pushbullet.com";
    _httpPortPushbullet = 443;
    _apiKeyPushbullet1 = "NA";
-   _activePushbullet1 = true;
+   _activeRingPushbullet1 = true;
+   _activeDoorPushbullet1 = true;
    _apiKeyPushbullet2 = "NA";
-   _activePushbullet2 = true;
+   _activeRingPushbullet2 = true;
+   _activeDoorPushbullet2 = true;
 
    _timeout = 0;
    _requestRunning = false;
@@ -32,12 +34,20 @@ String CustomWiFiClient::getApiKeyPushbullet1() {
   return _apiKeyPushbullet1;
 }
 
-void CustomWiFiClient::setActivePushbullet1(bool active) {
-  _activePushbullet1 = active;
+void CustomWiFiClient::setActiveRingPushbullet1(bool active) {
+  _activeRingPushbullet1 = active;
 }
 
-bool CustomWiFiClient::isActivePushbullet1() {
-  return _activePushbullet1;
+bool CustomWiFiClient::isActiveRingPushbullet1() {
+  return _activeRingPushbullet1;
+}
+
+void CustomWiFiClient::setActiveDoorPushbullet1(bool active) {
+  _activeDoorPushbullet1 = active;
+}
+
+bool CustomWiFiClient::isActiveDoorPushbullet1() {
+  return _activeDoorPushbullet1;
 }
 
 void CustomWiFiClient::setApiKeyPushbullet2(String apiKey) {
@@ -48,12 +58,20 @@ String CustomWiFiClient::getApiKeyPushbullet2() {
   return _apiKeyPushbullet2;
 }
 
-void CustomWiFiClient::setActivePushbullet2(bool active) {
-  _activePushbullet2 = active;
+void CustomWiFiClient::setActiveRingPushbullet2(bool active) {
+  _activeRingPushbullet2 = active;
 }
 
-bool CustomWiFiClient::isActivePushbullet2() {
-  return _activePushbullet2;
+bool CustomWiFiClient::isActiveRingPushbullet2() {
+  return _activeRingPushbullet2;
+}
+
+void CustomWiFiClient::setActiveDoorPushbullet2(bool active) {
+  _activeDoorPushbullet2 = active;
+}
+
+bool CustomWiFiClient::isActiveDoorPushbullet2() {
+  return _activeDoorPushbullet2;
 }
 
 void CustomWiFiClient::sendBellDataGoogle(int duration) {
@@ -151,8 +169,12 @@ void CustomWiFiClient::sendDataPushbullet(String title, String message) {
 
    String postData = String("type=note&") + "title=" + title + "&" + "body=" + message;
 
+	// spolehame na konkretni title pro urceni druhu notifikace
+	bool activePushbullet1 = (title == "Door" && _activeDoorPushbullet1) || (title == "Doorbell" && _activeRingPushbullet1);
+	bool activePushbullet2 = (title == "Door" && _activeDoorPushbullet2) || (title == "Doorbell" && _activeRingPushbullet2);
+
    // posli request(y)
-   if (_activePushbullet1) {
+   if (activePushbullet1) {
      Serial.println("Sending pushbullet1 request...");
      _client.print(String("POST ") + url + " HTTP/1.1\r\n" +
                   "Host: " + _hostPushbullet + "\r\n" +
@@ -163,7 +185,7 @@ void CustomWiFiClient::sendDataPushbullet(String title, String message) {
                   "\r\n" +
                   postData + "\n");
    }
-   if (_activePushbullet2) {
+   if (activePushbullet2) {
      Serial.println("Sending pushbullet2 request...");
      _client.print(String("POST ") + url + " HTTP/1.1\r\n" +
                   "Host: " + _hostPushbullet + "\r\n" +
@@ -175,7 +197,7 @@ void CustomWiFiClient::sendDataPushbullet(String title, String message) {
                   postData + "\n");
    }
 
-   if (_activePushbullet1 || _activePushbullet2) {
+   if (activePushbullet1 || activePushbullet2) {
      Serial.println("Pushbullet request sent... not waiting for response (do not block other operations)");
    }
 }

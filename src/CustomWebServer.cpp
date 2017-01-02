@@ -23,14 +23,16 @@ void CustomWebServer::handleClient() {
    _server.handleClient();
 }
 
-void CustomWebServer::save(String pbKey1, int pbKeyActive1, String pbKey2, int pbKeyActive2) {
+void CustomWebServer::save(String pbKey1, int pbKeyActiveRing1, int pbKeyActiveDoor1, String pbKey2, int pbKeyActiveRing2, int pbKeyActiveDoor2) {
    Serial.println("Saving data...");
    ConfigPersistor configPersistor;
    configPersistor.init();
    configPersistor.setPbApiKey1(pbKey1);
-   configPersistor.setPbActive1(pbKeyActive1);
+   configPersistor.setPbActiveRing1(pbKeyActiveRing1);
+   configPersistor.setPbActiveDoor1(pbKeyActiveDoor1);
    configPersistor.setPbApiKey2(pbKey2);
-   configPersistor.setPbActive2(pbKeyActive2);
+   configPersistor.setPbActiveRing2(pbKeyActiveRing2);
+   configPersistor.setPbActiveDoor2(pbKeyActiveDoor2);
    configPersistor.persist();
    if (_saveCallback) {
      _saveCallback();
@@ -63,16 +65,20 @@ void CustomWebServer::handleIndex() {
   if (_server.args() > 0) {
     if (_server.arg("pbKey1").length() > 0) {
       String pbKey1 = _server.arg("pbKey1");
-      String pbKeyActive1 = _server.arg("pbKeyActive1");
+      String pbKeyActiveRing1 = _server.arg("pbKeyActiveRing1");
+      String pbKeyActiveDoor1 = _server.arg("pbKeyActiveDoor1");
       String pbKey2 = _server.arg("pbKey2");
-      String pbKeyActive2 = _server.arg("pbKeyActive2");
-      Serial.println("PbKey1: " + pbKey1 + ", PbKeyActive1: " + pbKeyActive1);
-      Serial.println("PbKey2: " + pbKey2 + ", PbKeyActive2: " + pbKeyActive2);
+      String pbKeyActiveRing2 = _server.arg("pbKeyActiveRing2");
+      String pbKeyActiveDoor2 = _server.arg("pbKeyActiveDoor2");
+      Serial.println("PbKey1: " + pbKey1 + ", PbKeyActiveRing1: " + pbKeyActiveRing1 + ", PbKeyActiveDoor1: " + pbKeyActiveDoor1);
+      Serial.println("PbKey2: " + pbKey2 + ", PbKeyActiveRing2: " + pbKeyActiveRing2 + ", PbKeyActiveDoor2: " + pbKeyActiveDoor2);
       _pbKey1 = pbKey1;
-      _pbKeyActive1 = pbKeyActive1.length() == 0 ? 0 : atoi(pbKeyActive1.c_str());
+      _pbKeyActiveRing1 = pbKeyActiveRing1.length() == 0 ? 0 : atoi(pbKeyActiveRing1.c_str());
+      _pbKeyActiveDoor1 = pbKeyActiveDoor1.length() == 0 ? 0 : atoi(pbKeyActiveDoor1.c_str());
       _pbKey2 = pbKey2;
-      _pbKeyActive2 = pbKeyActive2.length() == 0 ? 0 : atoi(pbKeyActive2.c_str());
-      save(_pbKey1, _pbKeyActive1, _pbKey2, _pbKeyActive2);
+      _pbKeyActiveRing2 = pbKeyActiveRing2.length() == 0 ? 0 : atoi(pbKeyActiveRing2.c_str());
+      _pbKeyActiveDoor2 = pbKeyActiveDoor2.length() == 0 ? 0 : atoi(pbKeyActiveDoor2.c_str());
+      save(_pbKey1, _pbKeyActiveRing1, _pbKeyActiveDoor1, _pbKey2, _pbKeyActiveRing2, _pbKeyActiveDoor2);
     }
     if (_server.arg("bell").length() > 0) {
       if (_ringCallback) {
@@ -139,17 +145,23 @@ void CustomWebServer::handleIndex() {
                 <p>API key 1:<br>\
                 <input type='text' name='pbKey1' value='";
   html += _pbKey1;
-  html += "'> &nbsp; <input type='checkbox' name='pbKeyActive1' value='1'";
-  html += _pbKeyActive1 == 1 ? " checked" : "";
+  html += "'> &nbsp; <input type='checkbox' name='pbKeyActiveRing1' value='1'";
+  html += _pbKeyActiveRing1 == 1 ? " checked" : "";
   html += "\
-                > active</p>\
+                > ring &nbsp; <input type='checkbox' name='pbKeyActiveDoor1' value='1'";
+  html += _pbKeyActiveDoor1 == 1 ? " checked" : "";
+  html += "\
+                > door</p>\
                 <p>API key 2:<br>\
                 <input type='text' name='pbKey2' value='";
   html += _pbKey2;
-  html += "'> &nbsp; <input type='checkbox' name='pbKeyActive2' value='1'";
-  html += _pbKeyActive2 == 1 ? " checked" : "";
+  html += "'> &nbsp; <input type='checkbox' name='pbKeyActiveRing2' value='1'";
+  html += _pbKeyActiveRing2 == 1 ? " checked" : "";
   html += "\
-                > active</p>\
+                > ring &nbsp; <input type='checkbox' name='pbKeyActiveDoor2' value='1'";
+  html += _pbKeyActiveDoor2 == 1 ? " checked" : "";
+  html += "\
+                > door</p>\
                 <input type='submit' value='Save'>\
               </fieldset>\
             </form>\
@@ -162,11 +174,13 @@ void CustomWebServer::handleIndex() {
   _server.send(200, "text/html", html);
 }
 
-void CustomWebServer::init(String pbKey1, int pbKeyActive1, String pbKey2, int pbKeyActive2) {
+void CustomWebServer::init(String pbKey1, int pbKeyActiveRing1, int pbKeyActiveDoor1, String pbKey2, int pbKeyActiveRing2, int pbKeyActiveDoor2) {
   _pbKey1 = pbKey1;
-  _pbKeyActive1 = pbKeyActive1;
+  _pbKeyActiveRing1 = pbKeyActiveRing1;
+  _pbKeyActiveDoor1 = pbKeyActiveDoor1;
   _pbKey2 = pbKey2;
-  _pbKeyActive2 = pbKeyActive2;
+  _pbKeyActiveRing2 = pbKeyActiveRing2;
+  _pbKeyActiveDoor2 = pbKeyActiveDoor2;
 
    std::function<void ()> handleIndex = [&]{ CustomWebServer::handleIndex(); };
    _server.on("/", handleIndex);

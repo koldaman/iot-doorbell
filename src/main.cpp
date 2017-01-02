@@ -154,9 +154,11 @@ void configChanged() {
   ConfigPersistor configPersistor;
   configPersistor.init();
   httpsClient.setApiKeyPushbullet1(configPersistor.getPbApiKey1());
-  httpsClient.setActivePushbullet1(configPersistor.getPbActive1());
+  httpsClient.setActiveRingPushbullet1(configPersistor.getPbActiveRing1());
+  httpsClient.setActiveDoorPushbullet1(configPersistor.getPbActiveDoor1());
   httpsClient.setApiKeyPushbullet2(configPersistor.getPbApiKey2());
-  httpsClient.setActivePushbullet2(configPersistor.getPbActive2());
+  httpsClient.setActiveRingPushbullet2(configPersistor.getPbActiveRing2());
+  httpsClient.setActiveDoorPushbullet2(configPersistor.getPbActiveDoor2());
 }
 
 // manual request for ring a bell
@@ -194,7 +196,7 @@ void setup() {
   // load EEPROM configuration data
   configChanged();
 
-  server.init(httpsClient.getApiKeyPushbullet1(), httpsClient.isActivePushbullet1(), httpsClient.getApiKeyPushbullet2(), httpsClient.isActivePushbullet2());
+  server.init(httpsClient.getApiKeyPushbullet1(), httpsClient.isActiveRingPushbullet1(), httpsClient.isActiveDoorPushbullet1(), httpsClient.getApiKeyPushbullet2(), httpsClient.isActiveRingPushbullet2(), httpsClient.isActiveDoorPushbullet2());
   server.saveCallback(configChanged);
   server.ringCallback(ringRequest);
 

@@ -15,20 +15,26 @@ public:
   void monitorState();
   void setApiKeyPushbullet1(String apiKey);
   String getApiKeyPushbullet1();
-  void setActivePushbullet1(bool active);
-  bool isActivePushbullet1();
+  void setActiveRingPushbullet1(bool active);
+  bool isActiveRingPushbullet1();
+  void setActiveDoorPushbullet1(bool active);
+  bool isActiveDoorPushbullet1();
   void setApiKeyPushbullet2(String apiKey);
   String getApiKeyPushbullet2();
-  void setActivePushbullet2(bool active);
-  bool isActivePushbullet2();
+  void setActiveRingPushbullet2(bool active);
+  bool isActiveRingPushbullet2();
+  void setActiveDoorPushbullet2(bool active);
+  bool isActiveDoorPushbullet2();
 private:
   // Pushbullet
   const char* _hostPushbullet;
   int         _httpPortPushbullet;
   String      _apiKeyPushbullet1;
-  bool        _activePushbullet1;
+  bool        _activeRingPushbullet1;
+  bool        _activeDoorPushbullet1;
   String      _apiKeyPushbullet2;
-  bool        _activePushbullet2;
+  bool        _activeRingPushbullet2;
+  bool        _activeDoorPushbullet2;
 
   // Google
   const char* _hostGoogle;
